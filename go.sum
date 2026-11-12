@@ -1,0 +1,12 @@
+github.com/dgottlieb/smarty-assertions v1.2.6 h1:YAXgSslRBbVtd54iTqM4yGT2k1a2qS6cffNQo0SDxDY=
+github.com/dgottlieb/smarty-assertions v1.2.6/go.mod h1:x1wpV/RTxYWtN+vgrcRuCF4hjUmonK5NR59ZzQSym2k=
+github.com/golang/geo v0.0.0-20230421003525-6adc56603217 h1:HKlyj6in2JV6wVkmQ4XmG/EIm+SCYlPZ+V4GWit7Z+I=
+github.com/golang/geo v0.0.0-20230421003525-6adc56603217/go.mod h1:8wI0hitZ3a1IxZfeH3/5I97CI8i5cLGsYe7xNhQGs9U=
+github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
+github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
+go.viam.com/rdk v1.16.0 h1:TutLP4UpU7YBxOo2g2g8y4a6fazf5UEXbXZHw8VqOu4=
+go.viam.com/rdk v1.16.0/go.mod h1:f9k9VS1+KgprvsH2MwFM3oPGamyg703G9mMUlBQV+XM=
+go.viam.com/test v1.2.5 h1:k2bdMTlINKOmwp6BbZTCEu4X0VDsx7h0ePQObvFBI8A=
+go.viam.com/test v1.2.5/go.mod h1:t7S4N0LRX8DukUWldF68zunZ6fPLuZMEFPjvDWi/WV0=
+google.golang.org/protobuf v1.36.12 h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc=
+google.golang.org/protobuf v1.36.12/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
