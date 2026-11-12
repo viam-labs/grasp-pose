@@ -75,9 +75,10 @@ func (t *topDown) find(ctx context.Context) ([]Grasp, []Object, error) {
 		}
 		root := d.Transforms[0]
 		var points iterable
+		var link *referenceframe.LinkInFrame
 		for _, tf := range d.Transforms[1:] {
-			if pc, ok := tf.Geometry().(iterable); ok {
-				points = pc
+			if pc, ok := tf.Geometry().(iterable); ok && tf.Parent() == root.Name() {
+				points, link = pc, tf
 				break
 			}
 		}
@@ -90,12 +91,13 @@ func (t *topDown) find(ctx context.Context) ([]Grasp, []Object, error) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("frame system: %w", err)
 		}
+		pointsPose := spatialmath.Compose(world.Pose(), link.Pose())
 		c := cloud{}
 		if g := root.Geometry(); g != nil {
 			c.label = g.Label()
 		}
 		points.Iterate(0, 0, func(p r3.Vector, _ pointcloud.Data) bool {
-			c.points = append(c.points, spatialmath.Compose(world.Pose(), spatialmath.NewPoseFromPoint(p)).Point())
+			c.points = append(c.points, spatialmath.Compose(pointsPose, spatialmath.NewPoseFromPoint(p)).Point())
 			return true
 		})
 		clouds = append(clouds, c)
@@ -144,12 +146,12 @@ func (t *topDown) DoCommand(ctx context.Context, cmd map[string]interface{}) (ma
 			"width_mm": g.WidthMM, "score": g.Score, "pose": poseMap(g.Pose),
 		})
 	}
-	os := []interface{}{}
+	objs := []interface{}{}
 	for _, o := range objects {
-		os = append(os, map[string]interface{}{
+		objs = append(objs, map[string]interface{}{
 			"name": o.Name, "label": o.Label, "center": poseMap(o.Center), "yaw_deg": o.YawDeg,
 			"dims_mm": map[string]interface{}{"x": o.DimsMM.X, "y": o.DimsMM.Y, "z": o.DimsMM.Z},
 		})
 	}
-	return map[string]interface{}{"grasps": gs, "objects": os}, nil
+	return map[string]interface{}{"grasps": gs, "objects": objs}, nil
 }

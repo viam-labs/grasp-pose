@@ -92,6 +92,7 @@ For each detection:
 
 - Separated, roughly boxy objects on a surface: no clutter or bin picking.
 - Straight-down approaches only.
+- Without `support_z_mm`, a top-only object's box is only `support_margin_mm` tall.
 - The motion planner remains the collision check: the clearance is a ranking aid, not a guarantee.
 - Needs a vision service that serves `GetDetections3D`: detections-to-segments 1.4.0+ or obstacles-pointcloud 0.2.0+.
 

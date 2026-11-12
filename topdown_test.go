@@ -25,6 +25,11 @@ var camPose = spatialmath.NewPose(r3.Vector{X: 300, Y: 0, Z: 450}, &spatialmath.
 // camera at the points' centre, carrying a box with the class label, and a
 // "<root>/points" child with the points in the root's frame.
 func detection(t *testing.T, name, label string, world []r3.Vector) *detection3d.Detection {
+	return detectionShifted(t, name, label, world, r3.Vector{})
+}
+
+// detectionShifted puts the points link at shift under the root, the points relative to it.
+func detectionShifted(t *testing.T, name, label string, world []r3.Vector, shift r3.Vector) *detection3d.Detection {
 	t.Helper()
 	inv := spatialmath.PoseInverse(camPose)
 	cam := make([]r3.Vector, len(world))
@@ -36,7 +41,7 @@ func detection(t *testing.T, name, label string, world []r3.Vector) *detection3d
 	centre = centre.Mul(1 / float64(len(cam)))
 	pc := pointcloud.NewBasicEmpty()
 	for _, p := range cam {
-		test.That(t, pc.Set(p.Sub(centre), pointcloud.NewBasicData()), test.ShouldBeNil)
+		test.That(t, pc.Set(p.Sub(centre).Sub(shift), pointcloud.NewBasicData()), test.ShouldBeNil)
 	}
 	octree, err := pointcloud.ToBasicOctree(pc, 0)
 	test.That(t, err, test.ShouldBeNil)
@@ -44,7 +49,7 @@ func detection(t *testing.T, name, label string, world []r3.Vector) *detection3d
 	test.That(t, err, test.ShouldBeNil)
 	return &detection3d.Detection{Transforms: []*referenceframe.LinkInFrame{
 		referenceframe.NewLinkInFrame("cam", spatialmath.NewPoseFromPoint(centre), name, box),
-		referenceframe.NewLinkInFrame(name, spatialmath.NewZeroPose(), name+"/points", octree),
+		referenceframe.NewLinkInFrame(name, spatialmath.NewPoseFromPoint(shift), name+"/points", octree),
 	}}
 }
 
@@ -142,15 +147,6 @@ func TestTwoDetectionsAreNamedNearestFirst(t *testing.T) {
 	test.That(t, objects[1].(map[string]interface{})["name"], test.ShouldEqual, "object-1")
 }
 
-func TestDownPoseOrientationMatchesThePython(t *testing.T) {
-	// the Python SDK's down(h) orientation vector: (0, 0, -1), theta 180 - h
-	for h, theta := range map[float64]float64{30: 150, -60: -120, 60: 120} {
-		m := poseMap(downPose(0, 0, 0, h))
-		test.That(t, m["o_z"], test.ShouldAlmostEqual, -1, 1e-9)
-		test.That(t, m["theta"], test.ShouldAlmostEqual, theta, 1e-6)
-	}
-}
-
 func TestAFrameSystemErrorIsWrapped(t *testing.T) {
 	tr := newTracker(t, oneBar(t))
 	tr.fs.(*inject.FrameSystemService).TransformPoseFunc = func(
@@ -167,4 +163,31 @@ func TestAnUnknownCommandIsAnError(t *testing.T) {
 	test.That(t, err, test.ShouldNotBeNil)
 	test.That(t, err.Error(), test.ShouldContainSubstring, "grasps")
 	test.That(t, err.Error(), test.ShouldContainSubstring, "jump")
+}
+
+func TestAPointsLinkAwayFromTheRootIsComposed(t *testing.T) {
+	bar := blockPoints(320, 30, 25, 80, 40, 5, 40, true, true)
+	want := newTracker(t, oneBar(t))
+	shifted := newTracker(t, func() ([]*detection3d.Detection, error) {
+		return []*detection3d.Detection{detectionShifted(t, "seg/object-0", "rectangle-red", bar, r3.Vector{X: 10})}, nil
+	})
+	a, err := want.Poses(context.Background(), nil, nil)
+	test.That(t, err, test.ShouldBeNil)
+	b, err := shifted.Poses(context.Background(), nil, nil)
+	test.That(t, err, test.ShouldBeNil)
+	pa, pb := a["object-0/grasp-0"].Pose().Point(), b["object-0/grasp-0"].Pose().Point()
+	test.That(t, pb.X, test.ShouldAlmostEqual, pa.X, 0.5)
+	test.That(t, pb.Y, test.ShouldAlmostEqual, pa.Y, 0.5)
+	test.That(t, pb.Z, test.ShouldAlmostEqual, pa.Z, 0.5)
+}
+
+func TestADetectionWithoutAPointsLinkIsSkipped(t *testing.T) {
+	out, err := newTracker(t, func() ([]*detection3d.Detection, error) {
+		d := detection(t, "seg/object-0", "x", blockPoints(320, 30, 25, 80, 40, 5, 40, true, true))
+		d.Transforms = d.Transforms[:1]
+		return []*detection3d.Detection{d}, nil
+	}).DoCommand(context.Background(), map[string]interface{}{"grasps": map[string]interface{}{}})
+	test.That(t, err, test.ShouldBeNil)
+	test.That(t, out["grasps"], test.ShouldBeEmpty)
+	test.That(t, out["objects"], test.ShouldBeEmpty)
 }

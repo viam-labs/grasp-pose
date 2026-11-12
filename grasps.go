@@ -82,7 +82,7 @@ func plan(clouds []cloud, s settings) ([]Grasp, []Object) {
 			g.Name, g.Object, g.Label = fmt.Sprintf("%s/grasp-%d", name, j), name, o.label
 			grasps = append(grasps, g)
 		}
-		h := o.top - o.bottom
+		h := math.Max(o.top-o.bottom, s.supportMargin) // a top-only view has no real height
 		objects = append(objects, Object{
 			Name: name, Label: o.label, YawDeg: o.r.yawDeg,
 			DimsMM: r3.Vector{X: o.r.length, Y: o.r.width, Z: h},
@@ -95,6 +95,9 @@ func plan(clouds []cloud, s settings) ([]Grasp, []Object) {
 	return grasps, objects
 }
 
+// jawSlackMM is the room a grip needs beyond the object's width.
+const jawSlackMM = 10
+
 type candidate struct {
 	grasp     Grasp
 	clearance float64
@@ -104,7 +107,7 @@ func candidates(o fitted, others []r3.Vector, s settings) []Grasp {
 	var cs []candidate
 	if s.parallel {
 		for _, span := range []struct{ yaw, width float64 }{{o.r.yawDeg + 90, o.r.width}, {o.r.yawDeg, o.r.length}} {
-			if span.width+10 > s.maxOpening {
+			if span.width+jawSlackMM > s.maxOpening {
 				continue
 			}
 			z := o.top - s.gripDepth

@@ -32,12 +32,12 @@ type Config struct {
 
 // settings is a Config with its defaults filled in.
 type settings struct {
-	parallel, axisY                                       bool
-	maxOpening, fingerDepth, fingerWidth, fingerThickness float64
-	cupDiameter, minPatch, cupGap                         float64
-	supportZ                                              *float64
-	graspsPerObject                                       int
-	gripDepth, supportClearance, supportMargin, flatness  float64
+	parallel, axisY                                      bool
+	maxOpening, fingerWidth, fingerThickness             float64
+	cupDiameter, minPatch, cupGap                        float64
+	supportZ                                             *float64
+	graspsPerObject                                      int
+	gripDepth, supportClearance, supportMargin, flatness float64
 }
 
 func orDefault(v, d float64) float64 {
@@ -58,7 +58,7 @@ func (c *Config) settings() settings {
 	g := c.Gripper
 	s := settings{
 		parallel: g.Type == "parallel", axisY: g.OpeningAxis == "y",
-		maxOpening: g.MaxOpeningMM, fingerDepth: g.FingerDepthMM,
+		maxOpening:  g.MaxOpeningMM,
 		fingerWidth: g.FingerWidthMM, fingerThickness: g.FingerThicknessMM,
 		cupDiameter: g.CupDiameterMM, minPatch: orDefault(g.MinPatchMM, 0.8*g.CupDiameterMM),
 		cupGap: ptrOr(g.CupGapMM, 1), supportZ: c.SupportZMM, graspsPerObject: c.GraspsPerObject,

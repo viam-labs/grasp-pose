@@ -41,6 +41,11 @@ func TestDownPoseMatchesTheScriptsDownHeading(t *testing.T) {
 		test.That(t, x.X, test.ShouldAlmostEqual, math.Cos(h*math.Pi/180), 1e-6) // pointing along h, not -h
 		test.That(t, axis(p, r3.Vector{Z: 1}).Z, test.ShouldAlmostEqual, -1, 1e-6)
 	}
+	for h, theta := range map[float64]float64{30: 150, -60: -120, 60: 120} {
+		m := poseMap(downPose(0, 0, 0, h))
+		test.That(t, m["o_z"], test.ShouldAlmostEqual, -1, 1e-9)
+		test.That(t, m["theta"], test.ShouldAlmostEqual, theta, 1e-6)
+	}
 }
 
 func TestABarGetsOneGraspAcrossItsShortSide(t *testing.T) {
@@ -158,4 +163,11 @@ func TestTiesGoToTheNarrowerGrip(t *testing.T) {
 	test.That(t, len(grasps), test.ShouldEqual, 2)
 	test.That(t, grasps[0].WidthMM, test.ShouldAlmostEqual, 40, 3)
 	test.That(t, grasps[1].WidthMM, test.ShouldAlmostEqual, 44, 3)
+}
+
+func TestATopOnlyBoxIsAsTallAsTheSupportMargin(t *testing.T) {
+	s := parallelConfig().settings()
+	_, objects := plan([]cloud{{points: blockPoints(300, 0, 0, 40, 40, 5, 40, false, false)}}, s)
+	test.That(t, len(objects), test.ShouldEqual, 1)
+	test.That(t, objects[0].DimsMM.Z, test.ShouldEqual, s.supportMargin)
 }
