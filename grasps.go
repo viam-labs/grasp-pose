@@ -36,6 +36,7 @@ type fitted struct {
 	r           rect
 	top, bottom float64
 	known       bool
+	id          int // index among all non-empty detections
 }
 
 // downPose points the gripper's +z straight down with its x axis along world
@@ -48,15 +49,20 @@ func downPose(x, y, z, h float64) spatialmath.Pose {
 // plan turns detections into grasps and object boxes (spec: Algorithm, steps 2-7).
 func plan(clouds []cloud, s settings) ([]Grasp, []Object) {
 	var objs []fitted
+	var clusters [][]r3.Vector // every non-empty detection's own cluster, kept as an object or not
 	for _, c := range clouds {
+		if len(c.points) == 0 {
+			continue
+		}
 		kept, level, known := dropSupport(c.points, s)
 		pts := ownCluster(kept)
+		clusters = append(clusters, pts)
 		if len(pts) < minPoints {
 			continue
 		}
 		objs = append(objs, fitted{
 			label: c.label, points: pts, r: minAreaRect(pts),
-			top: percentile(zs(pts), 95), bottom: level, known: known,
+			top: percentile(zs(pts), 95), bottom: level, known: known, id: len(clusters) - 1,
 		})
 	}
 	sort.SliceStable(objs, func(i, j int) bool {
@@ -67,9 +73,9 @@ func plan(clouds []cloud, s settings) ([]Grasp, []Object) {
 	for i, o := range objs {
 		name := fmt.Sprintf("object-%d", i)
 		var others []r3.Vector
-		for j, n := range objs {
-			if j != i {
-				others = append(others, n.points...)
+		for j, pts := range clusters {
+			if j != o.id {
+				others = append(others, pts...)
 			}
 		}
 		for j, g := range candidates(o, others, s) {

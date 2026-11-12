@@ -54,10 +54,13 @@ The module depends on the configured vision service and the frame system. The ca
 Each grasp is the pose the gripper's own frame should reach, in the world frame, approaching straight down. Its rotation is `R = Rz(h)·Rx(π)`: a half turn about x to point +z down, then a turn h about the vertical, so the frame's x axis points along world heading h. h is the heading of the direction the jaws span for `opening_axis: x`, or that minus 90 degrees for `y`, normalised to [-90, 90). For a rectangle whose long side has yaw `yaw_long`, gripping across the short side gives h = `yaw_long + 90`. For suction, h = `yaw_long` (any heading works).
 
 ```python
+from viam.proto.common import Pose, PoseInFrame
+
 result = await grasp_pose.do_command({"grasps": {}})
-g = result["grasps"][0]["pose"]
-pose = Pose(x=g["x"], y=g["y"], z=g["z"], o_x=g["o_x"], o_y=g["o_y"], o_z=g["o_z"], theta=g["theta"])
-await motion.move(gripper_name, PoseInFrame(reference_frame="world", pose=pose), world_state=world_state)
+if result["grasps"]:
+    g = result["grasps"][0]["pose"]
+    pose = Pose(x=g["x"], y=g["y"], z=g["z"], o_x=g["o_x"], o_y=g["o_y"], o_z=g["o_z"], theta=g["theta"])
+    await motion.move(gripper_name, PoseInFrame(reference_frame="world", pose=pose), world_state=world_state)
 ```
 
 ### GetPoses
@@ -78,11 +81,11 @@ Objects are ordered by the distance of their centre from the world origin, neare
 For each detection:
 
 1. World points: the detection's point cloud, moved to the world with one frame-system transform.
-2. Support level: `support_z_mm` if set, else the 2nd percentile of z; points within `support_margin_mm` of it are dropped.
+2. Support level: `support_z_mm` if set, else the 2nd percentile of z; points within `support_margin_mm` of it are dropped. With an estimated level nothing is dropped when the points span no more than 2 x `support_margin_mm` (a top-only view).
 3. Own cluster: seen from above on a 5 mm grid, keep the 8-connected cluster nearest the median, dropping a neighbour's corner. Fewer than 30 points left: no object.
 4. Rectangle: the minimum-area rectangle round the cluster seen from above (angle swept a degree at a time); top is the 95th percentile of z.
-5. Candidates: parallel, one across each side whose width + 10 mm fits `max_opening_mm`, at the centre `grip_depth_mm` below the top (kept `support_clearance_mm` above a known support); suction, one at the centre of the top patch if it is at least `min_patch_mm` both ways, `cup_gap_mm` above the top.
-6. Clearance and rank: the fully open finger footprints (or the cup's circle) are measured top-down against the other detections' clusters; a candidate overlapping one is dropped; the rest rank by clearance, ties to the narrower grip; each object keeps its best `grasps_per_object`.
+5. Candidates: parallel, one across each side whose width + 10 mm fits `max_opening_mm`, at the centre `grip_depth_mm` below the top (kept `support_clearance_mm` above a known support; an estimated support skips that clamp); suction, one at the centre of the top patch if it is at least `min_patch_mm` both ways, `cup_gap_mm` above the top.
+6. Clearance and rank: the fully open finger footprints (or the cup's circle) are measured top-down against every other detection's points, including detections too small to be objects; a candidate overlapping one is dropped; the rest rank by clearance, ties to the narrower grip; each object keeps its best `grasps_per_object`.
 7. Object box: the rectangle as a world box from the support level to the top.
 
 ### Limits

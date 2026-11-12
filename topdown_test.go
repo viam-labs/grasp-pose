@@ -106,6 +106,10 @@ func TestPosesNamesEachGraspAndFiltersByBodyName(t *testing.T) {
 	poses, err = tracker.Poses(context.Background(), []string{"nope"}, nil)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, poses, test.ShouldBeEmpty)
+	poses, err = tracker.Poses(context.Background(), []string{"object-0/grasp-0"}, nil)
+	test.That(t, err, test.ShouldBeNil)
+	test.That(t, len(poses), test.ShouldEqual, 1)
+	test.That(t, poses["object-0/grasp-0"], test.ShouldNotBeNil)
 }
 
 func TestNoDetectionsIsAnEmptyResult(t *testing.T) {
@@ -162,4 +166,5 @@ func TestAnUnknownCommandIsAnError(t *testing.T) {
 	_, err := newTracker(t, oneBar(t)).DoCommand(context.Background(), map[string]interface{}{"jump": true})
 	test.That(t, err, test.ShouldNotBeNil)
 	test.That(t, err.Error(), test.ShouldContainSubstring, "grasps")
+	test.That(t, err.Error(), test.ShouldContainSubstring, "jump")
 }

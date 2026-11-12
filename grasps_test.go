@@ -135,3 +135,27 @@ func TestTooFewPointsIsNoObject(t *testing.T) {
 	test.That(t, grasps, test.ShouldBeEmpty)
 	test.That(t, objects, test.ShouldBeEmpty)
 }
+
+func TestAnEmptyCloudIsNoObject(t *testing.T) {
+	grasps, objects := plan([]cloud{{}}, parallelConfig().settings())
+	test.That(t, grasps, test.ShouldBeEmpty)
+	test.That(t, objects, test.ShouldBeEmpty)
+}
+
+func TestASmallDetectionStillCountsForClearance(t *testing.T) {
+	var small []r3.Vector
+	for i := 0; i < 20; i++ {
+		small = append(small, r3.Vector{X: 344 + float64(i%5), Y: -5 + float64(i/5)*3, Z: 45})
+	}
+	grasps, objects := plan([]cloud{block(300, 0, 0, 40, 40, ""), {points: small}}, onTable())
+	test.That(t, len(objects), test.ShouldEqual, 1)
+	test.That(t, len(grasps), test.ShouldEqual, 1)
+	parallelTo(t, axis(grasps[0].Pose, r3.Vector{X: 1}), 90)
+}
+
+func TestTiesGoToTheNarrowerGrip(t *testing.T) {
+	grasps, _ := plan([]cloud{{points: blockPoints(300, 0, 0, 44, 40, 5, 40, true, false)}}, onTable())
+	test.That(t, len(grasps), test.ShouldEqual, 2)
+	test.That(t, grasps[0].WidthMM, test.ShouldAlmostEqual, 40, 3)
+	test.That(t, grasps[1].WidthMM, test.ShouldAlmostEqual, 44, 3)
+}
