@@ -1,0 +1,24 @@
+{
+  "$schema": "https://dl.viam.dev/module.schema.json",
+  "module_id": "viam-labs:grasp-pose",
+  "visibility": "public",
+  "url": "https://github.com/viam-labs/grasp-pose",
+  "description": "Ranked top-down grasp poses for the objects a vision service's GetDetections3D finds",
+  "models": [
+    {
+      "api": "rdk:component:pose_tracker",
+      "model": "viam-labs:grasp-pose:top-down",
+      "short_description": "Top-down parallel-jaw and suction grasps for separated objects on a surface",
+      "markdown_link": "README.md#model-viam-labsgrasp-posetop-down"
+    }
+  ],
+  "markdown_link": "README.md",
+  "entrypoint": "bin/grasp-pose",
+  "build": {
+    "setup": "make setup",
+    "build": "make module.tar.gz",
+    "path": "module.tar.gz",
+    "arch": ["linux/amd64", "linux/arm64", "darwin/arm64"],
+    "darwin_deps": ["go", "nlopt-static"]
+  }
+}
